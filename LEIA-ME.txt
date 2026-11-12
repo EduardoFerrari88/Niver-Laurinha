@@ -1,0 +1,22 @@
+PASTA NO PC: C:\Users\eduar\OneDrive\Área de Trabalho\PROJETOS\NIVER LAURINHA
+
+CONTEUDO
+  index.html           -> o convite (horario/local/mapa: edite a linha EVENT no comeco do <script>)
+  config.js            -> URL e chave "anon" do Supabase
+  fotos\               -> araras, raposa, girafa, capivaras, panda, joaninha (.jpg)
+  supabase\schema.sql  -> cole no Supabase (SQL Editor > Run)
+  atualizar.bat        -> publica qualquer mudanca com 1 comando
+
+TESTAR NO PC: de dois cliques em index.html
+
+PRIMEIRA PUBLICACAO (CMD aberto dentro da pasta)
+  git init
+  git branch -M main
+  git add .
+  git commit -m "primeira versao"
+  git remote add origin https://github.com/SEUUSUARIO/niver-laurinha.git
+  git push -u origin main
+  (Vercel > Add New Project > importe o repositorio. Framework: Other. Sem build.)
+
+TODA ATUALIZACAO
+  atualizar "o que mudou"
