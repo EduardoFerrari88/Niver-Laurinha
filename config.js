@@ -1,3 +1,11 @@
-// Preencha com os dados do Supabase (Settings > API). A chave "anon" é pública por design.
-window.CFG = { SUPABASE_URL: "https://fgcdabdamwxmxqcueihr.supabase.co", SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnY2RhYmRhbXd4bXhxY3VlaWhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ3Nzc4MzksImV4cCI6MjExMDM1MzgzOX0._ZCY_7q8Lig58sTTh1ZeiHuGp8vP7iX2xdVKextyGTs
-" };
+// Entrega ao convite a URL e a chave PÚBLICA (anon) do Supabase, lidas das variáveis da Vercel.
+module.exports = (req, res) => {
+  const c = {};
+  const url = (process.env.SUPABASE_URL || "").trim();
+  const key = (process.env.SUPABASE_ANON_KEY || "").trim();
+  if (url) c.SUPABASE_URL = url;
+  if (key) c.SUPABASE_ANON_KEY = key;
+  res.setHeader("Content-Type", "application/javascript; charset=utf-8");
+  res.setHeader("Cache-Control", "no-store");
+  res.status(200).send("window.CFG=Object.assign(window.CFG||{}," + JSON.stringify(c) + ");");
+};

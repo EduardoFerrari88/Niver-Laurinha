@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
 <title>Painel do anfitrião — Laurinha</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#0e1a12;color:#f6ecd6;font:16px/1.5 system-ui,sans-serif}
@@ -14,9 +14,9 @@ button.o{background:none;color:#ecd08a;border:1px solid #c99a4a}button.d{backgro
 .tabs{display:flex;gap:8px;margin-top:14px}.tabs button{flex:1}.on{outline:2px solid #ecd08a}.err{color:#ffb4a8}
 @media(max-width:480px){.st{grid-template-columns:repeat(3,1fr)}}
 </style></head><body><div class="w">
-<div id="login" style="max-width:340px;margin:12vh auto"><h1>Painel do anfitrião</h1><p style="color:#cfc8b0">Entre com o e-mail e a senha criados no Supabase.</p>
-<input id="em" type="email" placeholder="E-mail" style="margin-bottom:10px"><input id="pw" type="password" placeholder="Senha" style="margin-bottom:10px">
-<p class="err" id="err"></p><button id="go" style="width:100%">Entrar</button></div>
+<form id="login" style="max-width:340px;margin:12vh auto"><h1>Painel do anfitrião</h1><p style="color:#cfc8b0">Digite a senha do organizador.</p>
+<input id="pw" type="password" name="password" autocomplete="current-password" placeholder="Senha do organizador" style="margin-bottom:10px">
+<p class="err" id="err"></p><button id="go" type="submit" style="width:100%">Entrar</button></form>
 <div id="app" hidden>
 <div style="display:flex;justify-content:space-between;align-items:center"><h1>Convidados da Laurinha</h1><button class="o" id="out">Sair</button></div>
 <div class="st" id="st"></div>
@@ -24,18 +24,18 @@ button.o{background:none;color:#ecd08a;border:1px solid #c99a4a}button.d{backgro
 <div id="t1"><div class="tb"><input id="q" placeholder="Buscar por nome"><select id="f"><option value="all">Todos</option><option value="1">Confirmados</option><option value="0">Não vão</option></select><button id="csv">Exportar CSV</button></div><div id="list"></div></div>
 <div id="t2" hidden><div id="mlist" style="margin-top:12px"></div></div>
 </div></div>
-<script src="config.js"></script>
 <script>
-const C=window.CFG||{},$=s=>document.querySelector(s),esc=t=>String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let TOKEN=sessionStorage.getItem("hk")||"",R=[],M=[];
-const api=(p,o={})=>fetch(C.SUPABASE_URL+"/rest/v1/"+p,{headers:{apikey:C.SUPABASE_ANON_KEY,Authorization:"Bearer "+TOKEN,"Content-Type":"application/json",Prefer:"return=minimal"},...o});
-async function login(){$("#err").textContent="";
-  try{const r=await fetch(C.SUPABASE_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{apikey:C.SUPABASE_ANON_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:$("#em").value.trim(),password:$("#pw").value})});
-    const j=await r.json();if(!r.ok){$("#err").textContent="E-mail ou senha inválidos.";return}TOKEN=j.access_token;sessionStorage.setItem("hk",TOKEN);start()}
-  catch{$("#err").textContent="Sem conexão. Confira o config.js."}}
-function logout(){TOKEN="";sessionStorage.removeItem("hk");$("#app").hidden=true;$("#login").hidden=false}
-async function start(){const[a,b]=await Promise.all([api("rsvps?select=*&order=created_at.desc"),api("messages?select=id,name,message,created_at,edited&order=created_at.desc")]);
-  if(a.status===401||a.status===403){logout();return}R=await a.json();M=await b.json();$("#login").hidden=true;$("#app").hidden=false;draw()}
+const $=s=>document.querySelector(s),esc=t=>String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let TOKEN=sessionStorage.getItem("ht")||"",R=[],M=[];
+async function call(action,extra={}){try{const r=await fetch("/api/admin",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,token:TOKEN,...extra})});const j=await r.json().catch(()=>({}));return{ok:r.ok,status:r.status,j}}catch{return{ok:false,status:0,j:{}}}}
+function logout(){TOKEN="";sessionStorage.removeItem("ht");$("#app").hidden=true;$("#login").hidden=false}
+async function start(){const r=await call("list");if(r.status===401){logout();return}
+  if(!r.ok){logout();$("#err").textContent=r.j.error==="config"?"Faltam variáveis de configuração na Vercel.":"Não foi possível carregar os dados.";return}
+  R=r.j.rsvps;M=r.j.messages;$("#login").hidden=true;$("#app").hidden=false;draw()}
+$("#login").onsubmit=async e=>{e.preventDefault();$("#err").textContent="";$("#go").disabled=true;const r=await call("login",{password:$("#pw").value});$("#go").disabled=false;
+  if(r.status===401){$("#err").textContent="Senha incorreta.";return}
+  if(!r.ok){$("#err").textContent=r.j.error==="config"?"Faltam variáveis de configuração na Vercel.":"Sem conexão. Tente de novo.";return}
+  TOKEN=r.j.token;sessionStorage.setItem("ht",TOKEN);$("#pw").value="";start()};
 function rows(){const q=$("#q").value.toLowerCase(),f=$("#f").value;return R.filter(r=>(f==="all"||String(+r.attending)===f)&&r.name.toLowerCase().includes(q))}
 function draw(){const y=R.filter(r=>r.attending),s=k=>y.reduce((a,r)=>a+(r[k]||0),0);
   $("#st").innerHTML=[["Confirmaram",y.length],["Não vão",R.length-y.length],["Pessoas",s("guests")],["Adultos",s("adults")],["Crianças",s("children")]].map(([l,n])=>`<div><b>${n}</b>${l}</div>`).join("");
@@ -44,18 +44,17 @@ function draw(){const y=R.filter(r=>r.attending),s=k=>y.reduce((a,r)=>a+(r[k]||0
     (r.attending?`<div class="g3">${[["guests","Pessoas"],["adults","Adultos"],["children","Crianças"]].map(([k,l])=>`<label>${l}<input type="number" min="0" max="20" data-id="${r.id}" data-k="${k}" value="${r[k]??0}"></label>`).join("")}</div>`:"")+
     (r.companions||r.notes?`<p>${r.companions?"Acompanhantes (nome e idade): "+esc(r.companions):""}${r.companions&&r.notes?"\n":""}${r.notes?"Obs.: "+esc(r.notes):""}</p>`:"")+`<button class="d" data-del="${r.id}">Excluir</button></div>`}).join("")||'<p style="color:#cfc8b0">Nenhuma confirmação ainda.</p>';
   $("#mlist").innerHTML=M.map(m=>`<div class="r"><b>${esc(m.name)}</b> <small style="color:#cfc8b0">${new Date(m.created_at).toLocaleString("pt-BR")}${m.edited?" · editado":""}</small><p>${esc(m.message)}</p><button class="d" data-delm="${m.id}">Excluir recado</button></div>`).join("")||'<p style="color:#cfc8b0">Nenhum recado ainda.</p>'}
-$("#go").onclick=login;$("#pw").onkeydown=e=>e.key==="Enter"&&login();$("#out").onclick=logout;
-$("#q").oninput=$("#f").onchange=draw;
+$("#out").onclick=logout;$("#q").oninput=$("#f").onchange=draw;
 $("#b1").onclick=()=>{$("#t1").hidden=false;$("#t2").hidden=true;$("#b1").className="on";$("#b2").className="o"};
 $("#b2").onclick=()=>{$("#t2").hidden=false;$("#t1").hidden=true;$("#b2").className="on";$("#b1").className="o"};
-$("#list").onchange=async e=>{const d=e.target.dataset;if(!d.id)return;let v=d.k==="attending"?e.target.value==="1":+e.target.value;const b={[d.k]:v,updated_at:new Date().toISOString()};
-  if(d.k==="attending"&&!v)Object.assign(b,{guests:0,adults:null,children:null});if(d.k==="attending"&&v)b.guests=1;
-  if((await api("rsvps?id=eq."+d.id,{method:"PATCH",body:JSON.stringify(b)})).ok)start();else alert("Não foi possível salvar.")};
+$("#list").onchange=async e=>{const d=e.target.dataset;if(!d.id)return;const v=d.k==="attending"?e.target.value==="1":+e.target.value,data={[d.k]:v};
+  if(d.k==="attending"){if(v)data.guests=1;else Object.assign(data,{guests:0,adults:null,children:null})}
+  const r=await call("update",{id:d.id,data});if(r.ok)start();else alert("Não foi possível salvar.")};
 document.addEventListener("click",async e=>{const d=e.target.dataset;
-  if(d.del&&confirm("Excluir esta confirmação?")){await api("rsvps?id=eq."+d.del,{method:"DELETE"});start()}
-  if(d.delm&&confirm("Excluir este recado?")){await api("messages?id=eq."+d.delm,{method:"DELETE"});start()}});
-$("#csv").onclick=()=>{const q=v=>`"${String(v??"").replace(/"/g,'""')}"`,h=["Nome","Idade","Telefone","Presença","Pessoas","Adultos","Crianças","Acompanhantes","Observações"];
-  const b=rows().map(r=>[r.name,r.guest_age,r.phone,r.attending?"Confirmado":"Não vai",r.guests,r.adults,r.children,r.companions,r.notes].map(q).join(";"));
+  if(d.del&&confirm("Excluir esta confirmação?")){await call("delete",{id:d.del});start()}
+  if(d.delm&&confirm("Excluir este recado?")){await call("delete_message",{id:d.delm});start()}});
+$("#csv").onclick=()=>{const q=v=>`"${String(v??"").replace(/"/g,'""')}"`,h=["Nome","Idade","Telefone","Presença","Pessoas","Adultos","Crianças","Acompanhantes (nome e idade)"];
+  const b=rows().map(r=>[r.name,r.guest_age,r.phone,r.attending?"Confirmado":"Não vai",r.guests,r.adults,r.children,r.companions].map(q).join(";"));
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\uFEFF"+[h.join(";"),...b].join("\n")],{type:"text/csv"}));a.download="convidados-laurinha.csv";a.click()};
-if(TOKEN&&C.SUPABASE_URL)start();
+if(TOKEN)start();
 </script></body></html>
