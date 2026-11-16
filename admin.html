@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>Painel do anfitrião — Laurinha</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0e1a12;color:#f6ecd6;font:16px/1.5 system-ui,sans-serif}
+.w{max-width:760px;margin:0 auto;padding:18px}h1{font:600 26px Georgia,serif;color:#ecd08a;margin:0}
+input,select{background:#ffffff12;color:#f6ecd6;border:1px solid #c99a4a77;border-radius:6px;padding:10px;font:inherit;width:100%}
+button{background:#c99a4a;color:#1a1208;border:0;border-radius:6px;padding:10px 16px;font:inherit;font-weight:600;cursor:pointer}
+button.o{background:none;color:#ecd08a;border:1px solid #c99a4a}button.d{background:none;color:#ffb4a8;border:0;text-decoration:underline;padding:4px 0}
+.st{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:16px 0}.st div{background:#1b2d20;border:1px solid #c99a4a55;border-radius:8px;text-align:center;padding:10px 4px;font-size:12px}.st b{display:block;font:600 26px Georgia,serif;color:#ecd08a}
+.tb{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.tb>*{flex:1;min-width:120px}
+.r{background:#1b2d20;border:1px solid #c99a4a44;border-radius:8px;padding:12px;margin-bottom:10px}.r .t{display:flex;justify-content:space-between;gap:10px}
+.r a{color:#ecd08a}.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px;color:#cfc8b0;margin-top:8px}.r p{margin:8px 0 0;color:#cfc8b0;white-space:pre-wrap;word-break:break-word}
+.tabs{display:flex;gap:8px;margin-top:14px}.tabs button{flex:1}.on{outline:2px solid #ecd08a}.err{color:#ffb4a8}
+@media(max-width:480px){.st{grid-template-columns:repeat(3,1fr)}}
+</style></head><body><div class="w">
+<div id="login" style="max-width:340px;margin:12vh auto"><h1>Painel do anfitrião</h1><p style="color:#cfc8b0">Entre com o e-mail e a senha criados no Supabase.</p>
+<input id="em" type="email" placeholder="E-mail" style="margin-bottom:10px"><input id="pw" type="password" placeholder="Senha" style="margin-bottom:10px">
+<p class="err" id="err"></p><button id="go" style="width:100%">Entrar</button></div>
+<div id="app" hidden>
+<div style="display:flex;justify-content:space-between;align-items:center"><h1>Convidados da Laurinha</h1><button class="o" id="out">Sair</button></div>
+<div class="st" id="st"></div>
+<div class="tabs"><button id="b1" class="on">Confirmações</button><button id="b2" class="o">Recados</button></div>
+<div id="t1"><div class="tb"><input id="q" placeholder="Buscar por nome"><select id="f"><option value="all">Todos</option><option value="1">Confirmados</option><option value="0">Não vão</option></select><button id="csv">Exportar CSV</button></div><div id="list"></div></div>
+<div id="t2" hidden><div id="mlist" style="margin-top:12px"></div></div>
+</div></div>
+<script src="config.js"></script>
+<script>
+const C=window.CFG||{},$=s=>document.querySelector(s),esc=t=>String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let TOKEN=sessionStorage.getItem("hk")||"",R=[],M=[];
+const api=(p,o={})=>fetch(C.SUPABASE_URL+"/rest/v1/"+p,{headers:{apikey:C.SUPABASE_ANON_KEY,Authorization:"Bearer "+TOKEN,"Content-Type":"application/json",Prefer:"return=minimal"},...o});
+async function login(){$("#err").textContent="";
+  try{const r=await fetch(C.SUPABASE_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{apikey:C.SUPABASE_ANON_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:$("#em").value.trim(),password:$("#pw").value})});
+    const j=await r.json();if(!r.ok){$("#err").textContent="E-mail ou senha inválidos.";return}TOKEN=j.access_token;sessionStorage.setItem("hk",TOKEN);start()}
+  catch{$("#err").textContent="Sem conexão. Confira o config.js."}}
+function logout(){TOKEN="";sessionStorage.removeItem("hk");$("#app").hidden=true;$("#login").hidden=false}
+async function start(){const[a,b]=await Promise.all([api("rsvps?select=*&order=created_at.desc"),api("messages?select=id,name,message,created_at,edited&order=created_at.desc")]);
+  if(a.status===401||a.status===403){logout();return}R=await a.json();M=await b.json();$("#login").hidden=true;$("#app").hidden=false;draw()}
+function rows(){const q=$("#q").value.toLowerCase(),f=$("#f").value;return R.filter(r=>(f==="all"||String(+r.attending)===f)&&r.name.toLowerCase().includes(q))}
+function draw(){const y=R.filter(r=>r.attending),s=k=>y.reduce((a,r)=>a+(r[k]||0),0);
+  $("#st").innerHTML=[["Confirmaram",y.length],["Não vão",R.length-y.length],["Pessoas",s("guests")],["Adultos",s("adults")],["Crianças",s("children")]].map(([l,n])=>`<div><b>${n}</b>${l}</div>`).join("");
+  $("#list").innerHTML=rows().map(r=>{const p=r.phone,w="https://wa.me/"+(p.length<=11?"55"+p:p);
+    return `<div class="r"><div class="t"><div><b>${esc(r.name)}</b>${r.guest_age!=null?` <small style="color:#cfc8b0">· ${r.guest_age} anos</small>`:""}<br><a href="${w}" target="_blank">${esc(p)}</a></div><select data-id="${r.id}" data-k="attending" style="width:auto"><option value="1"${r.attending?" selected":""}>Vai</option><option value="0"${r.attending?"":" selected"}>Não vai</option></select></div>`+
+    (r.attending?`<div class="g3">${[["guests","Pessoas"],["adults","Adultos"],["children","Crianças"]].map(([k,l])=>`<label>${l}<input type="number" min="0" max="20" data-id="${r.id}" data-k="${k}" value="${r[k]??0}"></label>`).join("")}</div>`:"")+
+    (r.companions||r.notes?`<p>${r.companions?"Acompanhantes (nome e idade): "+esc(r.companions):""}${r.companions&&r.notes?"\n":""}${r.notes?"Obs.: "+esc(r.notes):""}</p>`:"")+`<button class="d" data-del="${r.id}">Excluir</button></div>`}).join("")||'<p style="color:#cfc8b0">Nenhuma confirmação ainda.</p>';
+  $("#mlist").innerHTML=M.map(m=>`<div class="r"><b>${esc(m.name)}</b> <small style="color:#cfc8b0">${new Date(m.created_at).toLocaleString("pt-BR")}${m.edited?" · editado":""}</small><p>${esc(m.message)}</p><button class="d" data-delm="${m.id}">Excluir recado</button></div>`).join("")||'<p style="color:#cfc8b0">Nenhum recado ainda.</p>'}
+$("#go").onclick=login;$("#pw").onkeydown=e=>e.key==="Enter"&&login();$("#out").onclick=logout;
+$("#q").oninput=$("#f").onchange=draw;
+$("#b1").onclick=()=>{$("#t1").hidden=false;$("#t2").hidden=true;$("#b1").className="on";$("#b2").className="o"};
+$("#b2").onclick=()=>{$("#t2").hidden=false;$("#t1").hidden=true;$("#b2").className="on";$("#b1").className="o"};
+$("#list").onchange=async e=>{const d=e.target.dataset;if(!d.id)return;let v=d.k==="attending"?e.target.value==="1":+e.target.value;const b={[d.k]:v,updated_at:new Date().toISOString()};
+  if(d.k==="attending"&&!v)Object.assign(b,{guests:0,adults:null,children:null});if(d.k==="attending"&&v)b.guests=1;
+  if((await api("rsvps?id=eq."+d.id,{method:"PATCH",body:JSON.stringify(b)})).ok)start();else alert("Não foi possível salvar.")};
+document.addEventListener("click",async e=>{const d=e.target.dataset;
+  if(d.del&&confirm("Excluir esta confirmação?")){await api("rsvps?id=eq."+d.del,{method:"DELETE"});start()}
+  if(d.delm&&confirm("Excluir este recado?")){await api("messages?id=eq."+d.delm,{method:"DELETE"});start()}});
+$("#csv").onclick=()=>{const q=v=>`"${String(v??"").replace(/"/g,'""')}"`,h=["Nome","Idade","Telefone","Presença","Pessoas","Adultos","Crianças","Acompanhantes","Observações"];
+  const b=rows().map(r=>[r.name,r.guest_age,r.phone,r.attending?"Confirmado":"Não vai",r.guests,r.adults,r.children,r.companions,r.notes].map(q).join(";"));
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\uFEFF"+[h.join(";"),...b].join("\n")],{type:"text/csv"}));a.download="convidados-laurinha.csv";a.click()};
+if(TOKEN&&C.SUPABASE_URL)start();
+</script></body></html>

@@ -225,7 +225,7 @@ async function rpc(fn,body){
     if(fn==="list_messages")return a.map(({token,...m})=>m);
     const i=a.findIndex(m=>m.id===body.p_id&&m.token===body.p_token);if(i<0)return null;
     if(fn==="edit_message"){a[i].message=body.p_message;a[i].edited=true}else a.splice(i,1);w("prev_msgs",a);return true}
-  try{const r=await fetch(CFG.SUPABASE_URL+"/rest/v1/rpc/"+fn,{method:"POST",headers:{apikey:CFG.SUPABASE_ANON_KEY,Authorization:"Bearer "+CFG.SUPABASE_ANON_KEY,"Content-Type":"application/json"},body:JSON.stringify(body)});
+  try{const r=await fetch(CFG.SUPABASE_URL+"/rest/v1/rpc/"+fn,{method:"POST",headers:{apikey:CFG.SUPABASE_ANON_KEY,...(String(CFG.SUPABASE_ANON_KEY).startsWith("sb_")?{}:{Authorization:"Bearer "+CFG.SUPABASE_ANON_KEY}),"Content-Type":"application/json"},body:JSON.stringify(body)});
     if(!r.ok)return null;const t=await r.text();return t?JSON.parse(t):true}catch{return null}}
 /* acompanhantes: nome + idade de cada um */
 let NC=0;
