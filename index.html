@@ -161,6 +161,8 @@ input::placeholder,textarea::placeholder{color:#a58b6a}
 <script src="/api/config"></script>
 <script>
 const $=s=>document.querySelector(s),CFG=window.CFG||{};
+if(CFG.SUPABASE_URL)CFG.SUPABASE_URL=String(CFG.SUPABASE_URL).trim().replace(/\/rest\/v1\/?$/,"").replace(/\/+$/,"");
+if(CFG.SUPABASE_ANON_KEY)CFG.SUPABASE_ANON_KEY=String(CFG.SUPABASE_ANON_KEY).replace(/\s+/g,"");
 const EVENT={date:"2027-01-23T20:00:00-03:00",dateLabel:"23 de janeiro de 2027",time:"20h",place:"TIVOLI BUFFET",addr:"Av. Cel. Joaquim Montenegro, 303 · Ponta da Praia, Santos/SP · CEP 11035-001",
   mapsUrl:"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent("Tivoli Buffet, Av. Cel. Joaquim Montenegro, 303, Ponta da Praia, Santos - SP, 11035-001")};
 const A=(id,c="")=>`<svg class="ani ${c}" viewBox="0 0 100 100"><use href="#${id}"/></svg>`;
@@ -227,7 +229,7 @@ async function rpc(fn,body){
     const i=a.findIndex(m=>m.id===body.p_id&&m.token===body.p_token);if(i<0)return null;
     if(fn==="edit_message"){a[i].message=body.p_message;a[i].edited=true}else a.splice(i,1);w("prev_msgs",a);return true}
   try{const r=await fetch(CFG.SUPABASE_URL+"/rest/v1/rpc/"+fn,{method:"POST",headers:{apikey:CFG.SUPABASE_ANON_KEY,...(String(CFG.SUPABASE_ANON_KEY).startsWith("sb_")?{}:{Authorization:"Bearer "+CFG.SUPABASE_ANON_KEY}),"Content-Type":"application/json"},body:JSON.stringify(body)});
-    if(!r.ok)return null;const t=await r.text();return t?JSON.parse(t):true}catch{return null}}
+    if(!r.ok){window.RPC_ERR=r.status+" "+(await r.text()).slice(0,220);return null}const t=await r.text();return t?JSON.parse(t):true}catch(e){window.RPC_ERR="rede: "+e.message;return null}}
 /* acompanhantes: nome + idade de cada um */
 let NC=0;
 function drawCL(){const o=[...document.querySelectorAll("#cl .cr")].map(r=>[r.children[0].value,r.children[1].value]);$("#nc").textContent=NC;
@@ -241,7 +243,7 @@ document.querySelectorAll("[data-a]").forEach(b=>b.onclick=async()=>{
   if(cs.some(c=>c.nome.length<2||bad(c.idade))){$("#err").textContent="Informe o nome e a idade de cada acompanhante.";return}
   $("#err").textContent="";const all=yes?[age,...cs.map(c=>c.idade)]:[],ad=all.filter(x=>x>=18).length;
   const ok=await rpc("rsvp_upsert",{p_name:name,p_phone:phone,p_attending:yes,p_guests:yes?1+cs.length:0,p_adults:ad,p_children:all.length-ad,p_companions:cs.map(c=>`${c.nome} (${c.idade})`).join(", ")||null,p_notes:null,p_age:bad(age)?null:age,p_companions_list:cs.length?cs:null});
-  if(!ok){$("#err").textContent="Não foi possível salvar agora. Tente novamente.";return}
+  if(!ok){$("#err").textContent="Não foi possível salvar agora. Tente novamente."+(window.RPC_ERR?" ["+window.RPC_ERR+"]":"");return}
   $("#form").style.display="none";const d=$("#done");d.style.display="block";if(yes)confetti();
   d.innerHTML='<div class="orn">✦</div><p class="s gold" style="font-size:30px;line-height:1.2;margin:0">'+(yes?"Eeeeba! Sua presença está confirmada! A Laurinha está esperando por você!":"Sentiremos sua falta! A Laurinha agradece seu carinho!")+'</p><p style="margin:12px 0 0;color:var(--mu)">'+(yes?"A Joaninha já anotou o seu nome.":"")+'</p><button id="again" style="margin-top:18px;background:none;border:0;text-decoration:underline;color:var(--mu);font:inherit;cursor:pointer">Alterar minha resposta</button>';
   $("#again").onclick=()=>{d.style.display="none";$("#form").style.display="block"}});
@@ -257,7 +259,7 @@ $("#mlist").onclick=async e=>{const t=e.target.dataset,tk=TK();if(!t)return;
 $("#msend").onclick=async()=>{const n=$("#mname").value.trim(),m=$("#mtxt").value.trim();
   if(n.length<2||m.length<2){$("#merr").textContent="Escreva seu nome e o recado.";return}
   $("#merr").textContent="";const tok=uid()+uid(),id=await rpc("send_message",{p_name:n,p_message:m,p_token:tok});
-  if(typeof id==="string"){const x=TK();x[id]=tok;localStorage.setItem("laurinha_tk",JSON.stringify(x));$("#mtxt").value="";loadMsgs()}else $("#merr").textContent="Não foi possível enviar. Tente novamente."};
+  if(typeof id==="string"){const x=TK();x[id]=tok;localStorage.setItem("laurinha_tk",JSON.stringify(x));$("#mtxt").value="";loadMsgs()}else $("#merr").textContent="Não foi possível enviar. Tente novamente."+(window.RPC_ERR?" ["+window.RPC_ERR+"]":"")};
 loadMsgs();
 function confetti(){const C=["#ecd08a","#f2c4c4","#a8b8a0","#fff3cf","#e58a4a"];for(let i=0;i<48;i++){const e=document.createElement("i");e.className="cf";e.style.cssText=`left:${Math.random()*100}vw;background:${C[i%5]};animation-delay:${Math.random()*.7}s;animation-duration:${2.2+Math.random()*1.6}s`;document.body.append(e);setTimeout(()=>e.remove(),4600)}}
 /* som ambiente
