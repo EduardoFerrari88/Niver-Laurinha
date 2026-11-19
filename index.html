@@ -93,6 +93,15 @@ input::placeholder,textarea::placeholder{color:#a58b6a}
 .mapfb{display:none;position:relative;height:260px;text-decoration:none;color:var(--wd)}.mapfb svg{position:absolute;inset:0;width:100%;height:100%}
 .mapfb span{position:absolute;left:0;right:0;bottom:0;padding:34px 12px 12px;text-align:center;background:linear-gradient(#fffaf000,#fffaf0f2 55%);font:600 19px Fredoka}.mapfb small{display:block;font:400 13px Fredoka;margin-top:2px}.mapfb b{display:inline-block;margin-top:8px;background:var(--pk);color:#fff;border-radius:999px;padding:8px 16px;font-size:13px}
 .mapw.nf .mapfb{display:block}.mapw.nf iframe{display:none}
+#snd{display:none;align-items:center;justify-content:center;padding:0}#snd .sl{display:none}#snd.off .sl{display:block}#snd.off .w{display:none}
+#hb{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));right:14px;z-index:42;width:48px;height:48px;border-radius:50%;border:0;background:var(--pk);box-shadow:0 4px 0 #c4577b,0 8px 14px #0003;display:none;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:0}
+#hb i{display:block;width:22px;height:3px;border-radius:2px;background:#fff;transition:transform .3s,opacity .3s}
+#hb.x i:nth-child(1){transform:translateY(8px) rotate(45deg)}#hb.x i:nth-child(2){opacity:0}#hb.x i:nth-child(3){transform:translateY(-8px) rotate(-45deg)}
+#menu{position:fixed;inset:0;z-index:41;visibility:hidden;transition:visibility 0s .3s}#menu.on{visibility:visible;transition:none}
+.mbg{position:absolute;inset:0;background:#2b1a0a77;opacity:0;transition:opacity .3s}#menu.on .mbg{opacity:1}
+.mpanel{position:absolute;top:calc(72px + env(safe-area-inset-top,0px));right:14px;width:min(80vw,310px);padding:26px 12px 14px;display:grid;gap:8px;transform-origin:100% 0;transform:scale(.6);opacity:0;transition:transform .3s cubic-bezier(.2,1.3,.4,1),opacity .25s}#menu.on .mpanel{transform:none;opacity:1}
+.mpanel button{border:0;border-radius:14px;background:#fffaf0d9;color:var(--wd);font:600 16px Fredoka;padding:13px 14px;text-align:left;cursor:pointer;box-shadow:inset 0 0 0 2px #b57d4066}.mpanel button:active{background:#fff}.mpanel hr{border:0;border-top:2px dashed #8a5a2b66;margin:2px 0}
+#main .sec{scroll-margin-top:40px}
 @media (prefers-reduced-motion:reduce){.lj{display:none}*{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}}
 </style>
 </head>
@@ -140,7 +149,7 @@ input::placeholder,textarea::placeholder{color:#a58b6a}
 
   <div class="sec"><div class="rv"><h3>Os amigos da Laurinha</h3><div class="art" id="artM"></div><p class="s" style="font-size:20px;margin:14px 0 0;color:#7a3f12;text-shadow:0 2px 0 #fff">Toque nos amiguinhos da floresta!</p></div><div class="garden"></div></div>
 
-  <div class="sec" id="rsvp" style="scroll-margin-top:10px"><div class="rv"><div class="wood" style="margin-bottom:-18px;position:relative;z-index:2;font:400 22px/1.2 Pacifico">Você vai participar dessa aventura?</div>
+  <div class="sec" id="rsvp"><div class="rv"><div class="wood" style="margin-bottom:-18px;position:relative;z-index:2;font:400 22px/1.2 Pacifico">Você vai participar dessa aventura?</div>
     <div class="paper" style="padding-top:34px"><div id="form" style="text-align:left">
       <input id="name" placeholder="Nome completo"><input id="phone" placeholder="WhatsApp (com DDD)" inputmode="tel">
       <label class="lbl">Sua idade (anos)<input id="age" type="number" inputmode="numeric" min="0" max="120" placeholder="Ex.: 34"></label>
@@ -162,7 +171,10 @@ input::placeholder,textarea::placeholder{color:#a58b6a}
     <p style="margin:18px 0">Vamos juntos tornar os 7 anos da Laurinha ainda mais especiais?</p><a class="btn" href="#rsvp">CONFIRMAR MINHA PRESENÇA</a>
     <div class="s" style="font-size:26px;margin-top:22px">Com carinho, esperamos você!</div></div><div class="garden"></div></div>
 </div>
-<button id="snd" aria-label="Som ambiente">♪</button><button id="top" aria-label="Voltar ao início">↑</button>
+<button id="hb" aria-label="Abrir menu" aria-expanded="false" aria-controls="menu"><i></i><i></i><i></i></button>
+<nav id="menu" aria-label="Menu do convite"><div class="mbg"></div><div class="mpanel wood">
+<button data-t="s-inicio">Início</button><button data-t="s-local">Onde a magia vai acontecer</button><button data-t="rsvp">Confirmar presença</button><button data-t="s-recados">Recados</button></div></nav>
+<button id="snd" aria-label="Ligar ou desligar a música" title="Música"><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M3 9v6h4l5 4V5L7 9H3z" fill="currentColor"/><path class="w" d="M15.5 8.5a5 5 0 010 7M18 6a8.5 8.5 0 010 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="sl" d="M4 3.5l16 17" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button><button id="top" aria-label="Voltar ao início">↑</button>
 
 <script src="config.js"></script>
 <script src="/api/config"></script>
@@ -187,6 +199,19 @@ const LJ=[0,48,200,300,120,330,170];
 document.querySelectorAll("#main .sec").forEach((s,k)=>{for(let i=0;i<(k%2?1:2);i++){const b=document.createElement("span");b.className="lj";
   b.style.cssText=`top:${[7,93,5,91,9,95,6][(k+i*3)%7]}%;animation-duration:${20+(k+i*2)%4*6}s;animation-delay:${-(k*4+i*9)}s;${i?"animation-direction:reverse;":""}`;
   b.innerHTML=`<svg viewBox="0 0 40 40" style="filter:hue-rotate(${LJ[(k+i*3)%7]}deg) saturate(1.25)"><use href="#lb"/></svg>`;s.append(b)}});
+/* identifica cada parte do convite para o menu */
+["s-inicio","s-contagem","s-local","s-amigos","rsvp","s-recados","s-final"].forEach((id,i)=>{const e=document.querySelectorAll("#main .sec")[i];if(e&&!e.id)e.id=id});
+/* menu hambúrguer */
+{const m=$("#menu"),bt=$("#hb"),snd=$("#snd");
+  const open=o=>{m.classList.toggle("on",o);bt.classList.toggle("x",o);bt.setAttribute("aria-expanded",o);bt.setAttribute("aria-label",o?"Fechar menu":"Abrir menu")};
+  bt.onclick=()=>open(!m.classList.contains("on"));
+  m.onclick=e=>{if(e.target.classList.contains("mbg")){open(false);return}const a=e.target.closest("[data-t]");if(!a)return;const t=a.dataset.t;
+    open(false);
+    const el=document.getElementById(t);if(el)setTimeout(()=>el.scrollIntoView({behavior:"smooth",block:"start"}),200)};
+  addEventListener("keydown",e=>{if(e.key==="Escape")open(false)});
+  const lab=()=>snd.setAttribute("aria-pressed",!snd.classList.contains("off"));lab();
+  new MutationObserver(lab).observe(snd,{attributes:true,attributeFilter:["class"]});
+  window.showHB=()=>{bt.style.display="flex"}}
 /* dados da festa */
 $("#vd").textContent=EVENT.dateLabel;$("#vtime").textContent=EVENT.time;$("#vplace").textContent=EVENT.place;$("#vaddr").textContent=EVENT.addr;$("#maps").href=EVENT.mapsUrl;$("#mapfb").href=EVENT.mapsUrl;
 document.addEventListener("securitypolicyviolation",e=>{if(/frame|child/.test(e.violatedDirective))$("#mapw").classList.add("nf")});
@@ -222,7 +247,7 @@ document.addEventListener("click",e=>{if(e.target.closest("button,a,input,textar
 document.documentElement.classList.add("lock");
 $("#enter").onclick=e=>{window.startMusic&&window.startMusic();const r=e.currentTarget.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2,I=$("#intro");
   $("#main").style.display="block";I.style.clipPath=`circle(170% at ${x}px ${y}px)`;void I.offsetWidth;I.style.transition="clip-path 1.1s cubic-bezier(.6,0,.2,1)";I.style.clipPath=`circle(0px at ${x}px ${y}px)`;
-  setTimeout(()=>{I.style.display="none";document.documentElement.classList.remove("lock");scrollTo(0,0);$("#top").style.display=$("#snd").style.display="block"},1150);
+  setTimeout(()=>{I.style.display="none";document.documentElement.classList.remove("lock");scrollTo(0,0);$("#top").style.display="block";$("#snd").style.display="flex";window.showHB&&window.showHB()},1150);
   const io=new IntersectionObserver(l=>l.forEach(i=>i.isIntersecting&&i.target.classList.add("in")),{threshold:.12});document.querySelectorAll(".rv").forEach(v=>io.observe(v))};
 $("#top").onclick=()=>scrollTo({top:0,behavior:"smooth"});
 $("#share").onclick=()=>{const m="Você recebeu um convite especial para o aniversário de 7 anos da Laurinha! Venha participar dessa aventura na Floresta Encantada! 🌳🦊";
@@ -277,7 +302,7 @@ loadMsgs();
 function confetti(){const C=["#ecd08a","#f2c4c4","#a8b8a0","#fff3cf","#e58a4a"];for(let i=0;i<48;i++){const e=document.createElement("i");e.className="cf";e.style.cssText=`left:${Math.random()*100}vw;background:${C[i%5]};animation-delay:${Math.random()*.7}s;animation-duration:${2.2+Math.random()*1.6}s`;document.body.append(e);setTimeout(()=>e.remove(),4600)}}
 /* música de fundo: se existir musica/fundo.mp3 toca bem baixinho; senão usa sinos e passarinhos sintetizados (botão ♪) */
 {const bgm=new Audio("musica/fundo.mp3");bgm.loop=true;bgm.preload="none";bgm.volume=0;
-  let tm,ac,on=false,mode="";const snd=$("#snd"),N=[523,587,659,784,880,1047],VOL=.15;snd.classList.add("off");
+  let tm,ac,on=false,mode="";const snd=$("#snd"),N=[523,587,659,784,880,1047],VOL=.10;snd.classList.add("off");
   const fade=to=>{clearInterval(bgm.f);bgm.f=setInterval(()=>{const d=to-bgm.volume;if(Math.abs(d)<.01){bgm.volume=to;clearInterval(bgm.f);if(!to)bgm.pause()}else bgm.volume=Math.max(0,Math.min(1,bgm.volume+d*.12))},80)};
   const note=(f,d,v,sw)=>{const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.type="sine";o.frequency.setValueAtTime(f,t);if(sw)o.frequency.exponentialRampToValueAtTime(sw,t+d*.6);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(ac.destination);o.start(t);o.stop(t+d+.1)};
   const loop=()=>{note(N[Math.random()*6|0],2.4,.05);if(Math.random()<.55)setTimeout(()=>{note(2600,.16,.025,3400);setTimeout(()=>note(3000,.12,.02,2500),170)},400+Math.random()*900);tm=setTimeout(loop,1700+Math.random()*2400)};
