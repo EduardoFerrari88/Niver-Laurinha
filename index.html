@@ -102,6 +102,7 @@ input::placeholder,textarea::placeholder{color:#a58b6a}
 .mpanel{position:absolute;top:calc(72px + env(safe-area-inset-top,0px));right:14px;width:min(80vw,310px);padding:26px 12px 14px;display:grid;gap:8px;transform-origin:100% 0;transform:scale(.6);opacity:0;transition:transform .3s cubic-bezier(.2,1.3,.4,1),opacity .25s}#menu.on .mpanel{transform:none;opacity:1}
 .mpanel button{border:0;border-radius:14px;background:#fffaf0d9;color:var(--wd);font:600 16px Fredoka;padding:13px 14px;text-align:left;cursor:pointer;box-shadow:inset 0 0 0 2px #b57d4066}.mpanel button:active{background:#fff}.mpanel hr{border:0;border-top:2px dashed #8a5a2b66;margin:2px 0}
 #main .sec{scroll-margin-top:40px}
+#snd,#hb,#top,.mpanel button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 @media (prefers-reduced-motion:reduce){.lj{display:none}*{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}}
 </style>
 </head>
@@ -300,16 +301,20 @@ $("#msend").onclick=async()=>{const n=$("#mname").value.trim(),m=$("#mtxt").valu
   if(typeof id==="string"){const x=TK();x[id]=tok;localStorage.setItem("laurinha_tk",JSON.stringify(x));$("#mtxt").value="";loadMsgs()}else $("#merr").textContent="Não foi possível enviar. Tente novamente."+(window.RPC_ERR?" ["+window.RPC_ERR+"]":"")};
 loadMsgs();
 function confetti(){const C=["#ecd08a","#f2c4c4","#a8b8a0","#fff3cf","#e58a4a"];for(let i=0;i<48;i++){const e=document.createElement("i");e.className="cf";e.style.cssText=`left:${Math.random()*100}vw;background:${C[i%5]};animation-delay:${Math.random()*.7}s;animation-duration:${2.2+Math.random()*1.6}s`;document.body.append(e);setTimeout(()=>e.remove(),4600)}}
-/* música de fundo: se existir musica/fundo.mp3 toca bem baixinho; senão usa sinos e passarinhos sintetizados (botão ♪) */
-{const bgm=new Audio("musica/fundo.mp3");bgm.loop=true;bgm.preload="none";const canVol=(()=>{const a=new Audio();a.volume=.5;return a.volume===.5})();
-  let tm,ac,on=false,mode="";const snd=$("#snd"),N=[523,587,659,784,880,1047],VOL=1;snd.classList.add("off");
-  const fade=to=>{clearInterval(bgm.f);if(!canVol){if(!to)bgm.pause();return}bgm.f=setInterval(()=>{const d=to-bgm.volume;if(Math.abs(d)<.02){bgm.volume=to;clearInterval(bgm.f);if(!to)bgm.pause()}else bgm.volume=Math.max(0,Math.min(1,bgm.volume+d*.12))},80)};
+/* música de fundo: toca musica/fundo.mp3 (volume já reduzido no arquivo); sem o arquivo, usa sinos e passarinhos sintetizados.
+   O botão responde na hora: o estado muda ao toque e respostas atrasadas do celular são ignoradas. */
+{const bgm=new Audio("musica/fundo.mp3");bgm.loop=true;bgm.preload="auto";try{bgm.load()}catch(e){}
+  const canVol=(()=>{const a=new Audio();a.volume=.5;return a.volume===.5})();
+  let tm,ac,want=false,seq=0;const snd=$("#snd"),N=[523,587,659,784,880,1047];
+  const setUI=o=>{snd.classList.toggle("off",!o);snd.setAttribute("aria-pressed",o)};setUI(false);
   const note=(f,d,v,sw)=>{const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.type="sine";o.frequency.setValueAtTime(f,t);if(sw)o.frequency.exponentialRampToValueAtTime(sw,t+d*.6);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(ac.destination);o.start(t);o.stop(t+d+.1)};
-  const loop=()=>{note(N[Math.random()*6|0],2.4,.05);if(Math.random()<.55)setTimeout(()=>{note(2600,.16,.025,3400);setTimeout(()=>note(3000,.12,.02,2500),170)},400+Math.random()*900);tm=setTimeout(loop,1700+Math.random()*2400)};
-  const synthOn=()=>{if(!ac){const A=window.AudioContext||window.webkitAudioContext;if(!A)return;ac=new A}ac.resume();mode="synth";loop()};
-  const musicOn=auto=>{if(on)return;if(canVol)bgm.volume=0;bgm.play().then(()=>{mode="file";on=true;snd.classList.remove("off");fade(VOL)}).catch(()=>{if(!auto){on=true;snd.classList.remove("off");synthOn()}})};
-  const musicOff=()=>{on=false;snd.classList.add("off");clearTimeout(tm);if(mode==="file"){fade(0);setTimeout(()=>{if(!on)bgm.pause()},3500)}};
-  snd.onclick=()=>on?musicOff():musicOn(false);
+  const loop=()=>{if(!want)return;note(N[Math.random()*6|0],2.4,.05);if(Math.random()<.55)setTimeout(()=>{if(want){note(2600,.16,.025,3400);setTimeout(()=>want&&note(3000,.12,.02,2500),170)}},400+Math.random()*900);tm=setTimeout(loop,1700+Math.random()*2400)};
+  const synthOn=()=>{if(!ac){const A=window.AudioContext||window.webkitAudioContext;if(!A){want=false;setUI(false);return}ac=new A}ac.resume();loop()};
+  const fadeIn=()=>{clearInterval(bgm.f);if(!canVol)return;bgm.volume=0;bgm.f=setInterval(()=>{if(bgm.volume>=.97){bgm.volume=1;clearInterval(bgm.f)}else bgm.volume=Math.min(1,bgm.volume+.05)},80)};
+  const musicOn=auto=>{if(want)return;want=true;setUI(true);const my=++seq;if(canVol)bgm.volume=0;
+    bgm.play().then(()=>{if(!want||my!==seq){bgm.pause();return}fadeIn()}).catch(err=>{if(my!==seq||!want||(err&&err.name==="AbortError"))return;if(auto){want=false;setUI(false)}else synthOn()})};
+  const musicOff=()=>{want=false;++seq;clearInterval(bgm.f);clearTimeout(tm);bgm.pause();setUI(false)};
+  snd.onclick=()=>want?musicOff():musicOn(false);
   window.startMusic=()=>musicOn(true)}
 </script>
 </body>
